@@ -131,7 +131,11 @@ function YouCursor({ cursorRef, visible }: YouCursorProps) {
   if (!visible) return null
 
   return (
-    <div ref={cursorRef} aria-hidden='true' className='pointer-events-none fixed top-0 left-0 z-50'>
+    <div
+      ref={cursorRef}
+      aria-hidden='true'
+      className={`pointer-events-none fixed top-0 left-0 z-50 transition-transform`}
+    >
       <svg width='23.15' height='21.1' viewBox='0 0 17.5 16.4' fill='none'>
         <path d={CURSOR_ARROW_MIRRORED_PATH} fill='#33C482' />
       </svg>
