@@ -208,9 +208,9 @@ export default function Collaboration() {
     targetPos.current = { x: event.clientX, y: event.clientY }
   }, [])
 
-  const handleMouseEnter = useCallback((event: React.MouseEvent) => {
-    targetPos.current = { x: event.clientX, y: event.clientY }
-    currentPos.current = { x: event.clientX, y: event.clientY }
+  const handleMouseEnter = useCallback((e: React.MouseEvent) => {
+    targetPos.current = { x: e.clientX, y: e.clientY }
+    currentPos.current = { x: e.clientX, y: e.clientY }
     setIsHovering(true)
   }, [])
 
