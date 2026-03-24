@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import type { RefObject } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Badge, ChevronDown } from '@/components/emcn'
@@ -122,23 +123,18 @@ function AlexaCursor() {
 }
 
 interface YouCursorProps {
-  x: number
-  y: number
+  cursorRef: RefObject<HTMLDivElement | null>
   visible: boolean
 }
 
-function YouCursor({ x, y, visible }: YouCursorProps) {
-  if (!visible) return null
+const CURSOR_LERP_FACTOR = 0.3
 
+function YouCursor({ cursorRef, visible }: YouCursorProps) {
   return (
     <div
+      ref={cursorRef}
       aria-hidden='true'
-      className='pointer-events-none fixed z-50'
-      style={{
-        left: x,
-        top: y,
-        transform: 'translate(-2px, -2px)',
-      }}
+      className={`pointer-events-none fixed top-0 left-0 z-50 ${visible ? '' : 'hidden'}`}
     >
       <svg width='23.15' height='21.1' viewBox='0 0 17.5 16.4' fill='none'>
         <path d={CURSOR_ARROW_MIRRORED_PATH} fill='#33C482' />
@@ -164,42 +160,57 @@ function YouCursor({ x, y, visible }: YouCursorProps) {
  * - Reference "Sim" by name per capability ("Sim's real-time collaboration").
  */
 
-const CURSOR_LERP_FACTOR = 0.3
-
 export default function Collaboration() {
-  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 })
   const [isHovering, setIsHovering] = useState(false)
-  const sectionRef = useRef<HTMLElement>(null)
+  const cursorRef = useRef<HTMLDivElement>(null)
   const targetPos = useRef({ x: 0, y: 0 })
-  const animationRef = useRef<number>(0)
+  const currentPos = useRef({ x: 0, y: 0 })
+  const animationRef = useRef<number | null>(null)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (!isHovering) {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+        animationRef.current = null
+      }
+
+      return
+    }
+
     const animate = () => {
-      setCursorPos((prev) => ({
-        x: prev.x + (targetPos.current.x - prev.x) * CURSOR_LERP_FACTOR,
-        y: prev.y + (targetPos.current.y - prev.y) * CURSOR_LERP_FACTOR,
-      }))
+      currentPos.current = {
+        x: currentPos.current.x + (targetPos.current.x - currentPos.current.x) * CURSOR_LERP_FACTOR,
+        y: currentPos.current.y + (targetPos.current.y - currentPos.current.y) * CURSOR_LERP_FACTOR,
+      }
+
+      if (cursorRef.current) {
+        cursorRef.current.style.transform = `translate(${currentPos.current.x - 2}px, ${currentPos.current.y - 2}px)`
+      }
+
       animationRef.current = requestAnimationFrame(animate)
     }
 
-    if (isHovering) {
-      animationRef.current = requestAnimationFrame(animate)
+    if (cursorRef.current) {
+      cursorRef.current.style.transform = `translate(${currentPos.current.x - 2}px, ${currentPos.current.y - 2}px)`
     }
+
+    animationRef.current = requestAnimationFrame(animate)
 
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current)
+        animationRef.current = null
       }
     }
   }, [isHovering])
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    targetPos.current = { x: e.clientX, y: e.clientY }
+  const handleMouseMove = useCallback((event: React.MouseEvent) => {
+    targetPos.current = { x: event.clientX, y: event.clientY }
   }, [])
 
-  const handleMouseEnter = useCallback((e: React.MouseEvent) => {
-    targetPos.current = { x: e.clientX, y: e.clientY }
-    setCursorPos({ x: e.clientX, y: e.clientY })
+  const handleMouseEnter = useCallback((event: React.MouseEvent) => {
+    targetPos.current = { x: event.clientX, y: event.clientY }
+    currentPos.current = { x: event.clientX, y: event.clientY }
     setIsHovering(true)
   }, [])
 
@@ -209,16 +220,14 @@ export default function Collaboration() {
 
   return (
     <section
-      ref={sectionRef}
       id='collaboration'
       aria-labelledby='collaboration-heading'
-      className='bg-[#1C1C1C]'
-      style={{ cursor: isHovering ? 'none' : 'auto' }}
+      className='bg-[#1C1C1C] hover:cursor-none'
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <YouCursor x={cursorPos.x} y={cursorPos.y} visible={isHovering} />
+      <YouCursor cursorRef={cursorRef} visible={isHovering} />
       <style dangerouslySetInnerHTML={{ __html: CURSOR_KEYFRAMES }} />
 
       <DotGrid
