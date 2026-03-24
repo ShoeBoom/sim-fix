@@ -1,7 +1,7 @@
 'use client'
 
 import type { RefObject } from 'react'
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Badge, ChevronDown } from '@/components/emcn'
@@ -127,8 +127,6 @@ interface YouCursorProps {
   visible: boolean
 }
 
-const CURSOR_LERP_FACTOR = 0.3
-
 function YouCursor({ cursorRef, visible }: YouCursorProps) {
   return (
     <div
@@ -163,54 +161,17 @@ function YouCursor({ cursorRef, visible }: YouCursorProps) {
 export default function Collaboration() {
   const [isHovering, setIsHovering] = useState(false)
   const cursorRef = useRef<HTMLDivElement>(null)
-  const targetPos = useRef({ x: 0, y: 0 })
-  const currentPos = useRef({ x: 0, y: 0 })
-  const animationRef = useRef<number | null>(null)
-
-  useLayoutEffect(() => {
-    if (!isHovering) {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current)
-        animationRef.current = null
-      }
-
-      return
-    }
-
-    const animate = () => {
-      currentPos.current = {
-        x: currentPos.current.x + (targetPos.current.x - currentPos.current.x) * CURSOR_LERP_FACTOR,
-        y: currentPos.current.y + (targetPos.current.y - currentPos.current.y) * CURSOR_LERP_FACTOR,
-      }
-
-      if (cursorRef.current) {
-        cursorRef.current.style.transform = `translate(${currentPos.current.x - 2}px, ${currentPos.current.y - 2}px)`
-      }
-
-      animationRef.current = requestAnimationFrame(animate)
-    }
-
-    if (cursorRef.current) {
-      cursorRef.current.style.transform = `translate(${currentPos.current.x - 2}px, ${currentPos.current.y - 2}px)`
-    }
-
-    animationRef.current = requestAnimationFrame(animate)
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current)
-        animationRef.current = null
-      }
-    }
-  }, [isHovering])
-
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    targetPos.current = { x: e.clientX, y: e.clientY }
+    if (cursorRef.current) {
+      cursorRef.current.style.transform = `translate(${e.clientX - 2}px, ${e.clientY - 2}px)`
+    }
   }, [])
 
   const handleMouseEnter = useCallback((e: React.MouseEvent) => {
-    targetPos.current = { x: e.clientX, y: e.clientY }
-    currentPos.current = { x: e.clientX, y: e.clientY }
+    if (cursorRef.current) {
+      cursorRef.current.style.transform = `translate(${e.clientX - 2}px, ${e.clientY - 2}px)`
+    }
+
     setIsHovering(true)
   }, [])
 
